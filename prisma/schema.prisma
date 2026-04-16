@@ -1,0 +1,182 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  STAFF
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum QueueEntryStatus {
+  WAITING
+  CALLED
+  CHECKED_IN
+  SERVING
+  COMPLETED
+  SKIPPED
+  CANCELLED
+  EXPIRED
+}
+
+enum InstitutionType {
+  BANK
+  HOSPITAL
+  GOVERNMENT
+  UNIVERSITY
+  TELECOM
+  OTHER
+}
+
+enum NotificationType {
+  APPROACHING
+  YOUR_TURN
+  SKIPPED
+  REMINDER
+}
+
+model User {
+  id            String    @id @default(cuid())
+  phone         String    @unique
+  email         String?   @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  role          UserRole  @default(CUSTOMER)
+  avatarUrl     String?
+  isVerified    Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  queueEntries  QueueEntry[]
+  staffProfile  StaffProfile?
+  notifications Notification[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([phone])
+  @@index([role])
+}
+
+model Institution {
+  id             String          @id @default(cuid())
+  name           String
+  slug           String          @unique
+  type           InstitutionType
+  description    String?
+  address        String
+  city           String
+  state          String
+  latitude       Float?
+  longitude      Float?
+  phone          String?
+  email          String?
+  logoUrl        String?
+  coverImageUrl  String?
+  operatingHours Json?
+  isActive       Boolean         @default(true)
+  services       Service[]
+  staff          StaffProfile[]
+  queues         Queue[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([city, state])
+  @@index([type])
+  @@index([slug])
+}
+
+model Service {
+  id              String      @id @default(cuid())
+  name            String
+  description     String?
+  estimatedTime   Int         @default(10)
+  maxQueueSize    Int         @default(100)
+  isActive        Boolean     @default(true)
+  sortOrder       Int         @default(0)
+  institutionId   String
+  institution     Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  queues          Queue[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([institutionId])
+}
+
+model StaffProfile {
+  id              String      @id @default(cuid())
+  counterNumber   Int?
+  isOnDuty        Boolean     @default(false)
+  userId          String      @unique
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institutionId   String
+  institution     Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  servedEntries   QueueEntry[] @relation("ServedBy")
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([institutionId])
+}
+
+model Queue {
+  id              String      @id @default(cuid())
+  date            DateTime    @db.Date
+  currentNumber   Int         @default(0)
+  currentServing  Int         @default(0)
+  isOpen          Boolean     @default(true)
+  serviceId       String
+  service         Service     @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  institutionId   String
+  institution     Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  entries         QueueEntry[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([serviceId, date])
+  @@index([institutionId, date])
+}
+
+model QueueEntry {
+  id               String            @id @default(cuid())
+  ticketNumber     Int
+  status           QueueEntryStatus  @default(WAITING)
+  qrToken          String            @unique
+  checkedInAt      DateTime?
+  calledAt         DateTime?
+  skipCount        Int               @default(0)
+  servingStartedAt DateTime?
+  completedAt      DateTime?
+  rating           Int?
+  feedback         String?
+  queueId          String
+  queue            Queue             @relation(fields: [queueId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User              @relation(fields: [userId], references: [id])
+  servedById       String?
+  servedBy         StaffProfile?     @relation("ServedBy", fields: [servedById], references: [id])
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([queueId, status])
+  @@index([userId, status])
+  @@index([qrToken])
+}
+
+model Notification {
+  id          String            @id @default(cuid())
+  type        NotificationType
+  title       String
+  message     String
+  isRead      Boolean           @default(false)
+  sentViaPush Boolean           @default(false)
+  sentViaSms  Boolean           @default(false)
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime          @default(now())
+
+  @@index([userId, isRead])
+}
