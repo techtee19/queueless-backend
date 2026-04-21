@@ -55,7 +55,7 @@ router.get("/:id", async (req, res) => {
     }
 
     // Format: add live queue info to each service
-    const servicesWithQueueInfo = institution.services.map((service) => {
+    const servicesWithQueueInfo = institution.services.map((service: any) => {
       const todayQueue = service.queues[0];
       return {
         id: service.id,

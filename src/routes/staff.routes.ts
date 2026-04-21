@@ -46,7 +46,7 @@ router.get("/queue", authenticate, authorize("STAFF"), async (req, res) => {
     const served = todayEntries.length;
     const avgTime = todayEntries.length > 0
       ? Math.round(
-          todayEntries.reduce((sum, e) => {
+          todayEntries.reduce((sum: number, e: any) => {
             if (e.completedAt && e.createdAt) {
               return sum + (e.completedAt.getTime() - e.createdAt.getTime()) / 60000;
             }

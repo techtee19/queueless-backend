@@ -153,7 +153,7 @@ router.get("/my-active", authenticate, async (req, res) => {
     });
 
     const entriesWithPosition = await Promise.all(
-      entries.map(async (entry) => {
+      entries.map(async (entry: any) => {
         const position = await calculatePosition(entry.queueId, entry.ticketNumber);
         return {
           ...entry,
