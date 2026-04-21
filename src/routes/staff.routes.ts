@@ -3,7 +3,7 @@ import prisma from "../utils/prisma";
 import { authenticate, authorize } from "../middleware/auth.middleware";
 import { io } from "../server";
 
-const router = Router();
+const router: Router = Router();
 
 // GET /api/v1/staff/queue — Get current queue for staff's institution
 router.get("/queue", authenticate, authorize("STAFF"), async (req, res) => {
@@ -145,9 +145,10 @@ router.post("/call-next", authenticate, authorize("STAFF"), async (req, res) => 
 // POST /api/v1/staff/complete/:entryId — Mark service as complete
 router.post("/complete/:entryId", authenticate, authorize("STAFF"), async (req, res) => {
   try {
-    const entry = await prisma.queueEntry.findUnique({ where: { id: req.params.entryId } });
+    const entry = await prisma.queueEntry.findUnique({ where: { id: String(req.params.entryId) } });
     if (!entry) {
-      return res.status(404).json({ success: false, error: { code: "ENTRY_NOT_FOUND", message: "Entry not found" } });
+      res.status(404).json({ success: false, error: { code: "ENTRY_NOT_FOUND", message: "Entry not found" } });
+      return;
     }
 
     const updated = await prisma.queueEntry.update({
@@ -173,9 +174,10 @@ router.post("/complete/:entryId", authenticate, authorize("STAFF"), async (req, 
 // POST /api/v1/staff/skip/:entryId — Skip a customer (no-show)
 router.post("/skip/:entryId", authenticate, authorize("STAFF"), async (req, res) => {
   try {
-    const entry = await prisma.queueEntry.findUnique({ where: { id: req.params.entryId } });
+    const entry = await prisma.queueEntry.findUnique({ where: { id: String(req.params.entryId) } });
     if (!entry) {
-      return res.status(404).json({ success: false, error: { code: "ENTRY_NOT_FOUND", message: "Entry not found" } });
+      res.status(404).json({ success: false, error: { code: "ENTRY_NOT_FOUND", message: "Entry not found" } });
+      return;
     }
 
     const newSkipCount = entry.skipCount + 1;

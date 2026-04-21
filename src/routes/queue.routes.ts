@@ -5,7 +5,7 @@ import prisma from "../utils/prisma";
 import { authenticate } from "../middleware/auth.middleware";
 import { io } from "../server";
 
-const router = Router();
+const router: Router = Router();
 
 // ─── HELPERS ───
 
@@ -174,7 +174,7 @@ router.get("/my-active", authenticate, async (req, res) => {
 router.get("/:id", authenticate, async (req, res) => {
   try {
     const entry = await prisma.queueEntry.findUnique({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       include: {
         queue: {
           include: {
@@ -186,7 +186,8 @@ router.get("/:id", authenticate, async (req, res) => {
     });
 
     if (!entry) {
-      return res.status(404).json({ success: false, error: { code: "ENTRY_NOT_FOUND", message: "Queue entry not found" } });
+      res.status(404).json({ success: false, error: { code: "ENTRY_NOT_FOUND", message: "Queue entry not found" } });
+      return;
     }
 
     const position = await calculatePosition(entry.queueId, entry.ticketNumber);
@@ -219,9 +220,10 @@ router.post("/:id/cancel", authenticate, async (req, res) => {
   try {
     const userId = (req as any).user.sub;
 
-    const entry = await prisma.queueEntry.findUnique({ where: { id: req.params.id } });
+    const entry = await prisma.queueEntry.findUnique({ where: { id: String(req.params.id) } });
     if (!entry || entry.userId !== userId) {
-      return res.status(404).json({ success: false, error: { code: "ENTRY_NOT_FOUND", message: "Queue entry not found" } });
+      res.status(404).json({ success: false, error: { code: "ENTRY_NOT_FOUND", message: "Queue entry not found" } });
+      return;
     }
 
     if (!["WAITING", "CALLED"].includes(entry.status)) {
@@ -247,9 +249,10 @@ router.post("/:id/checkin", authenticate, async (req, res) => {
   try {
     const { qrToken } = req.body;
 
-    const entry = await prisma.queueEntry.findUnique({ where: { id: req.params.id } });
+    const entry = await prisma.queueEntry.findUnique({ where: { id: String(req.params.id) } });
     if (!entry) {
-      return res.status(404).json({ success: false, error: { code: "ENTRY_NOT_FOUND", message: "Queue entry not found" } });
+      res.status(404).json({ success: false, error: { code: "ENTRY_NOT_FOUND", message: "Queue entry not found" } });
+      return;
     }
 
     if (entry.qrToken !== qrToken) {

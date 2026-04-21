@@ -5,7 +5,7 @@ import { hashPassword, comparePassword } from "../utils/hash";
 import { generateAccessToken, generateRefreshToken, verifyToken } from "../utils/jwt";
 import { authenticate } from "../middleware/auth.middleware";
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const registerSchema = z.object({

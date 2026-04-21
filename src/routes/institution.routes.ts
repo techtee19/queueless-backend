@@ -1,7 +1,7 @@
 import { Router } from "express";
 import prisma from "../utils/prisma";
 
-const router = Router();
+const router: Router = Router();
 
 // GET /api/v1/institutions — List all (with optional filters: city, type, search)
 router.get("/", async (req, res) => {
