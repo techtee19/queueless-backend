@@ -14,10 +14,41 @@ import queueRoutes from "./routes/queue.routes";
 import staffRoutes from "./routes/staff.routes";
 import adminRoutes from "./routes/admin.routes";
 
+const normalizeOrigin = (origin: string) => origin.trim().replace(/\/$/, "");
+
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:3000")
+  .split(",")
+  .map(normalizeOrigin)
+  .filter(Boolean);
+
+const allowVercelPreviews = process.env.CORS_ALLOW_VERCEL_PREVIEWS === "true";
+
+const isAllowedOrigin = (origin: string) => {
+  const normalizedOrigin = normalizeOrigin(origin);
+
+  if (allowedOrigins.includes(normalizedOrigin)) return true;
+
+  return allowVercelPreviews && /^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(normalizedOrigin);
+};
+
+const corsOrigin = (
+  origin: string | undefined,
+  callback: (err: Error | null, allow?: boolean) => void
+) => {
+  if (!origin || isAllowedOrigin(origin)) {
+    callback(null, true);
+    return;
+  }
+
+  callback(new Error(`Origin ${origin} is not allowed by CORS`));
+};
+
+const corsOptions = { origin: corsOrigin, credentials: true };
+
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  cors: { origin: process.env.CORS_ORIGIN || "http://localhost:3000", credentials: true },
+  cors: corsOptions,
 });
 
 // Export io for use in route files
@@ -25,7 +56,7 @@ export { io };
 
 // Middleware
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || "http://localhost:3000", credentials: true }));
+app.use(cors(corsOptions));
 app.use(compression());
 app.use(morgan("dev"));
 app.use(express.json());
